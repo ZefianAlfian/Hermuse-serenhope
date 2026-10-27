@@ -1,0 +1,49 @@
+# Kredensial & secret — JANGAN PERNAH di-commit
+.env
+*.env
+**/.env
+*.key
+*.token
+.tunnel-key
+.tunnel-key*
+.tunnel-url
+.health-key
+.gate-pw
+.dashboard-pw
+wrangler.toml
+tunnel/pages-tunnel/wrangler.toml   # hasil generate (berisi D1 id asli); pakai wrangler.toml.example
+
+# Log
+*.log
+/logs/  # root saja — JANGAN 'logs/' polos: 9router/ punya folder SOURCE bernama logs/ (dashboard/logs, api/.../logs) yang wajib ter-commit
+
+# Runtime lock (watchdog.sh)
+.watchdog.lock
+
+# Data runtime Hermes / 9Router
+.hermes/
+9router-data/
+
+# 9Router vendored (fork serenhope di 9router/) — artefak build & install,
+# JANGAN di-commit (dibuat ulang oleh scripts/install.sh di mesin target)
+9router/.next/
+9router/.next-dev/
+9router/node_modules/
+9router/package-lock.json
+9router/.test-data/
+
+# Node
+node_modules/
+npm-debug.log*
+
+# OS / editor
+.DS_Store
+Thumbs.db
+*~
+*.swp
+.idea/
+/.vscode/  # root saja — 9router/.vscode/settings.json di-track upstream dan wajib ikut ter-commit
+
+# Backup
+*.bak
+*.orig
