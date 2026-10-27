@@ -11,9 +11,9 @@ tanpa dependensi ke repo fork saat install.
 | | |
 |---|---|
 | Hermuse (dasar) | https://github.com/imkofty/Hermuse — commit `0d72e79` |
-| 9Router fork | https://github.com/serenhope/9router — branch `master`, commit `fb3a5f6` |
+| 9Router fork | https://github.com/serenhope/9router — branch `master`, commit `c43b26f` |
 | Fork dari | Decolua/9router (upstream) |
-| Versi fork | `0.5.319` (`9router/package.json`) |
+| Versi fork | `0.5.320` (`9router/package.json`) |
 | Versi npm lama yang diganti | `9router@0.5.104` (di-pin di `scripts/install.sh` dulu) |
 
 Yang ditambahkan fork ini dibanding upstream (ringkas, dari README fork):

@@ -11,10 +11,20 @@ RESTARTED=""
 # Kunci run: dua watchdog tidak boleh tumpang tindih (run cron yang lambat
 # + run manual bisa me-restart komponen yang sama dua kali). Run kedua
 # langsung keluar. Tanpa flock di sistem, lewati kunci ini.
+# ATURAN: setiap perintah restart di bawah WAJIB memakai "9>&-" — daemon
+# yang di-restart tidak boleh mewarisi fd kunci ini. Dulu tanpa itu,
+# gateway/tunnel hasil restart memegang kunci selamanya sehingga semua
+# run watchdog berikutnya langsung keluar tanpa memeriksa apa pun.
 if command -v flock >/dev/null 2>&1; then
   exec 9>"$D/.watchdog.lock"
   flock -n 9 || exit 0
 fi
+
+# Jangan restart 9Router saat install.sh sedang berjalan (update/rebuild):
+# server belum punya build baru dan restart di tengah install hanya
+# akan gagal + bentrok dengan build.
+INSTALLING=0
+pgrep -f "scripts/install[.]sh" >/dev/null 2>&1 && INSTALLING=1
 
 # 1. 9Router (127.0.0.1:20128) — cek KODE STATUS HTTP dashboard, bukan
 # sekadar koneksi: curl tanpa -f/cek status tetap exit 0 pada respons
@@ -23,8 +33,12 @@ HTTP_CODE="$(curl -s -m 8 -o /dev/null -w '%{http_code}' http://127.0.0.1:20128/
 case "$HTTP_CODE" in
   200|301|302|303|307|308) : ;;  # sehat (200, atau redirect ke login = normal)
   *)
-    bash "$D/restart-9router.sh" > /dev/null 2>&1
-    RESTARTED="$RESTARTED 9router"
+    if [ "$INSTALLING" -eq 1 ]; then
+      echo "[$(date -u '+%F %H:%M:%S')] watchdog: 9Router mati tapi install.sh sedang jalan — restart dilewati" >> "$D/watchdog.log"
+    else
+      bash "$D/restart-9router.sh" 9>&- > /dev/null 2>&1
+      RESTARTED="$RESTARTED 9router"
+    fi
     ;;
 esac
 
@@ -33,7 +47,7 @@ esac
 # (mis. tunnel-client-hermesum.mjs) di setup multi-tunnel.
 TUNNEL_RESTARTED=0
 if ! pgrep -f "tunnel-client[.]mjs" > /dev/null 2>&1; then
-  bash "$D/restart-tunnel.sh" > /dev/null 2>&1
+  bash "$D/restart-tunnel.sh" 9>&- > /dev/null 2>&1
   RESTARTED="$RESTARTED tunnel"
   TUNNEL_RESTARTED=1
 fi
@@ -77,13 +91,15 @@ if [ "$TUNNEL_RESTARTED" -eq 0 ] && [ -f "$D/.tunnel-url" ]; then
         case "$PBODY" in
           *'"backend_ok":true'*|*'"backend_ok": true'*) : ;;  # sehat penuh
           *)
-            bash "$D/restart-9router.sh" > /dev/null 2>&1
-            RESTARTED="$RESTARTED 9router-backend"
+            if [ "$INSTALLING" -eq 0 ]; then
+              bash "$D/restart-9router.sh" 9>&- > /dev/null 2>&1
+              RESTARTED="$RESTARTED 9router-backend"
+            fi
             ;;
         esac
         ;;
       *)
-        bash "$D/restart-tunnel.sh" > /dev/null 2>&1
+        bash "$D/restart-tunnel.sh" 9>&- > /dev/null 2>&1
         RESTARTED="$RESTARTED tunnel-probe"
         ;;
     esac
@@ -92,7 +108,7 @@ fi
 
 # 3. Telegram gateway (hermes gateway run)
 if ! ps aux | grep "[g]ateway.*run" > /dev/null 2>&1; then
-  bash "$D/start-gateway.sh" > /dev/null 2>&1
+  bash "$D/start-gateway.sh" 9>&- > /dev/null 2>&1
   RESTARTED="$RESTARTED gateway"
 fi
 
